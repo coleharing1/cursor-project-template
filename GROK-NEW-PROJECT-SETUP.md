@@ -83,7 +83,7 @@ This guides architecture and UI.
 ### 3. Recommend and Finalize `tech-stack.md`
 **Prompt (Initial Recommendations):**
 ```
-Using @project-overview.md and @user-flow.md, recommend a stack. I prefer: TypeScript, React, Tailwind CSS [add yours].
+Using @project-overview.md and @user-flow.md, First create @tech-stack.md then inside it recommend a stack. I prefer: TypeScript, React, Tailwind CSS and everything in @DATABASE-OVERVIEW.md .
 
 For each category (language, UI lib, CSS, framework, DB/auth, deployment), propose an industry standard and one alternative. Describe roles, pros/cons, compatibility.
 
@@ -92,7 +92,7 @@ Categories: Language, Frontend Framework, UI Library, CSS Framework, Component L
 
 **User Action**: Review proposals. Ask AI for deeper pros/cons (e.g., "Compare Supabase vs. Firebase for auth"). Then prompt:
 ```
-Output finalized tech-stack.md with my selections: [List, e.g., Next.js, Supabase]. Include brief descriptions and roles.
+I like the standard recomendations on everything you suggested. please update @tech-stack.md to reflect only those
 ```
 
 **Prompt (Enhance):**

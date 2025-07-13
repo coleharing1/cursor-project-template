@@ -1,51 +1,30 @@
-# Cursor Project Template
+# TodoList Web App
 
-[![GitHub stars](https://img.shields.io/github/stars/coleharing1/cursor-project-template?style=social)](https://github.com/coleharing1/cursor-project-template/stargazers) [![GitHub forks](https://img.shields.io/github/forks/coleharing1/cursor-project-template?style=social)](https://github.com/coleharing1/cursor-project-template/network/members)
+## Overview
+TodoList is a web application for managing multiple todo lists (e.g., brand-specific, personal, big ideas, daily focus), addressing pain points like unified task viewing, daily selection, completion logging, and ad-hoc additions. It features hierarchical organization, automatic resets, and stats for productivity. For details, see [@project-overview.md](_docs/project-overview.md) and [@user-flow.md](_docs/user-flow.md).
 
-A streamlined template for bootstrapping AI-assisted full-stack web projects in Cursor AI (as of July 2025). This repo provides a documentation-first workflow, templates for key project docs, and rules for building modular, scalable codebases optimized for AI tools. Ideal for beginners relying on AI (e.g., 95% automation) to create production-grade apps with Next.js, Supabase, Vercel, and more.
+Built with technologies from [@tech-stack.md](_docs/tech-stack.md): Next.js, React, Tailwind CSS, Shadcn/UI, Supabase, Vercel.
 
-## Features
-- **Documentation-Led Setup**: Sequential guides to generate core docs (e.g., project-overview.md, user-flow.md, tech-stack.md) via AI prompts.
-- **AI-First Principles**: Files <500 lines, descriptive names/JSDoc, functional patterns, no classes—maximizes compatibility with Cursor's Chat/Composer.
-- **Templates and Examples**: Ready-to-use templates for overviews, themes (e.g., Tan Earthy Minimalist), APIs, testing, deployment, and project rules.
-- **Checklists and Trackers**: Instructional files for key features, pages/URLs status, and project history logs to monitor progress.
-- **2025 Integrations**: Supabase-mcp for AI-DB autonomy, Cursor background agents, WCAG 2.2 accessibility, and security mitigations.
-- **Workflow Enhancements**: Setup scripts, agent rules examples, and phase-based iterative development.
+## Setup Instructions
+1. Clone the repo: `git clone <repo-url>`.
+2. Install dependencies: `npm install`.
+3. Run setup script: `./setup.sh` (initializes Supabase local; requires Docker).
+4. Start dev server: `npm run dev` (runs at http://localhost:3000).
+5. For Supabase: Set env vars in .env.local (ref [@DATABASE-OVERVIEW.md](DATABASE-OVERVIEW.md)); `npx supabase start` for local DB.
+6. Deploy: Push to GitHub; Vercel auto-deploys (configure in dashboard).
 
-## Getting Started
-1. **Clone the Repo**:
-   ```bash
-   git clone https://github.com/coleharing1/cursor-project-template.git
-   cd cursor-project-template
-   ```
-2. **Run Setup Script**:
-   ```bash
-   chmod +x setup.sh
-   ./setup.sh
-   ```
-   This installs dependencies, initializes Supabase (if needed), and starts the local stack.
-3. **Open in Cursor AI**: Launch Cursor and enable Knowledge uploads (e.g., add key docs like @GROK-NEW-PROJECT-SETUP.md).
-4. **Follow the Guide**: Start with GROK-NEW-PROJECT-SETUP.md for step-by-step prompts to generate your project's docs.
+## Conventions
+Follow [@project-rules.md](_docs/project-rules.md):
+- AI-first: Modular files <500 lines, descriptive names/TSDoc comments.
+- Code Style: Functional (no classes), throw errors, maps over enums, concise conditionals.
+- Naming: kebab-case files, PascalCase components.
+- Database: Ref [@Database-Handling.md](Database-Handling.md) for Supabase rules (RLS, migrations).
 
-Prerequisites: Cursor AI (Pro recommended), Docker (for Supabase), Git, npm.
+## Contribution Guidelines
+- Branch: feature/<name> or fix/<name>.
+- Commit: Semantic (e.g., feat: add task CRUD).
+- PR: Reference related docs (e.g., @mvp-phase.md); Include tests.
+- Code Review: Ensure alignment with rules; Run linter/tests.
+- Issues: Use GitHub for bugs/features; Link to checklist [@key-features-checklist.md](_docs/key-features-checklist.md).
 
-## Usage
-- **Generate Docs**: Use prompts in GROK-NEW-PROJECT-SETUP.md (e.g., for project-overview.md).
-- **Build Iteratively**: Create phase docs in _docs/phases/ and implement features.
-- **Track Progress**: Update checklists (e.g., key-features-checklist.md) and history log.
-- **Customize Rules**: Adapt .cursorrules.md or User Rules for your stack.
-- **Deploy**: Follow DEPLOYMENT-GUIDE.md for Vercel/Supabase setups.
-
-For detailed workflows, see:
-- [GROK-NEW-PROJECT-SETUP.md](GROK-NEW-PROJECT-SETUP.md): Main guide.
-- [DATABASE-OVERVIEW.md](DATABASE-OVERVIEW.md): Supabase local/prod separation.
-- [PROJECT-RULES-TEMP.md](PROJECT-RULES-TEMP.md): Code style template.
-
-## Contributing
-Contributions welcome! Fork the repo, create a branch, and submit a PR. Follow the rules in PROJECT-RULES-TEMP.md. For issues, use GitHub Issues.
-
-## License
-MIT License. See [LICENSE](LICENSE) for details.
-
----
-Built for AI-driven development—fork and adapt for your next project! 
+For phases, see _docs/phases/. 
