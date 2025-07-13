@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,6 +18,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -26,34 +28,27 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Login attempt with:', email)
     setLoading(true)
     setError(null)
     
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const result = await response.json()
-      console.log('Login response:', result)
-
-      if (!response.ok) {
-        setError(result.error || 'Login failed')
-        setLoading(false)
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    
+    if (error) {
+      if (error.message === "Invalid login credentials") {
+        setError("Invalid email or password. Please try again.")
+      } else if (error.message === "Email not confirmed") {
+        setError("Please check your email to confirm your account before logging in.")
       } else {
-        // Login successful, redirect to dashboard
-        console.log('Login successful, redirecting...')
-        window.location.href = '/dashboard' // Use window.location for a full page refresh
+        setError(error.message)
       }
-    } catch (err) {
-      console.error('Login error:', err)
-      setError('An unexpected error occurred')
       setLoading(false)
+    } else {
+      // Refresh the page to trigger the session check in middleware
+      router.refresh()
+      router.push('/dashboard')
     }
   }
 
