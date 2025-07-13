@@ -51,8 +51,8 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
   // Form state
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [duration, setDuration] = useState("")
-  const [categoryId, setCategoryId] = useState("")
+  const [duration, setDuration] = useState<number | null>(null)
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined)
   const [isFocused, setIsFocused] = useState(false)
 
   // Fetch categories when modal opens
@@ -101,8 +101,8 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
       const taskData = {
         title: title.trim(),
         description: description.trim() || undefined,
-        duration: duration ? parseInt(duration, 10) : undefined,
-        category_id: categoryId || undefined,
+        duration: duration,
+        category_id: categoryId || null,
         is_focused: isFocused,
       }
 
@@ -122,7 +122,7 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
       // Reset form
       setTitle("")
       setDescription("")
-      setDuration("")
+      setDuration(null)
       setIsFocused(false)
       
       // Close modal
@@ -240,23 +240,27 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
             <Input
               id="duration"
               type="number"
-              value={duration}
+              value={duration ?? ""}
               onChange={(e) => {
                 const value = e.target.value
                 // Only allow positive integers
-                if (value === '' || /^\d+$/.test(value)) {
-                  setDuration(value)
+                if (value === '') {
+                  setDuration(null)
+                } else if (/^\d+$/.test(value)) {
+                  setDuration(parseInt(value, 10))
                 }
               }}
               placeholder="30"
               min="1"
               max="480"
-              step="5"
+              step="1"
               disabled={loading}
             />
-            <p className="text-xs text-muted-foreground">
-              {duration && formatDuration(parseInt(duration))}
-            </p>
+            {duration ? (
+              <p className="text-xs text-muted-foreground">
+                {formatDuration(duration)}
+              </p>
+            ) : null}
           </div>
 
           <DialogFooter>
