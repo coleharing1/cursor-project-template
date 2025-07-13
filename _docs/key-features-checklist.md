@@ -22,7 +22,7 @@ This checklist tracks core features from @project-overview.md, @user-flow.md, @s
 | Global Search and Notifications | Low | Planned | [ ] | @enhancements-phase.md (Advanced) |
 | Offline Support and Sync | Low | Planned | [ ] | @enhancements-phase.md (Advanced) |
 | Responsive Design and Subtle Animations | High | Planned | [ ] | @ui-rules.md, @theme-rules.md |
-| Database Schema with Migrations/RLS | High | Planned | [ ] | @setup-phase.md (Supabase) |
+| Database Schema with Migrations/RLS | High | Complete | [x] | @setup-phase.md (Supabase) |
 | Supabase Integration with supabase-mcp | Med | Planned | [ ] | @setup-phase.md (AI Schema) |
 
 ## Maintenance Notes

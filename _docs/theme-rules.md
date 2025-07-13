@@ -1,4 +1,4 @@
-# Theme Rules: Minimalist Neutral Palette
+# Theme Rules: Tan Earthy Minimalist
 
 ## Overview
 This theme adopts a clean, minimalist design with neutral tones, ample whitespace, and subtle accents to create a focused, non-distracting interface for the TodoList app. Inspired by user preferences and aligned with @project-overview.md, @user-flow.md, and @tech-stack.md, it emphasizes mobile-first layouts, responsive scaling, and gentle animations (e.g., fades). The palette supports light/dark modes for accessibility and comfort, meeting WCAG 2.2 standards (e.g., 4.5:1 contrast). Integrated with Tailwind CSS for utility classes and CSS vars for flexibility.
@@ -6,96 +6,101 @@ This theme adopts a clean, minimalist design with neutral tones, ample whitespac
 Key: Simplicity—avoid clutter; Use neutrals for calm; Accents for actions like task completion.
 
 ## Color Palette
-Neutral-based with soft accents. All meet AA contrast; Dark mode inverts for readability.
+The palette draws from natural elements: warm neutrals for backgrounds, dark grays for text, and subtle accents in muted greens and oranges.
+
+- Modes: Light mode primary; extendable to dark with inverted values.
 
 | Color Name | Light Mode (Hex) | Dark Mode (Hex) | Usage |
 |------------|------------------|-----------------|-------|
-| Background Primary | #F9FAFB | #1F2937 | Main backgrounds, app shell |
-| Surface | #FFFFFF | #374151 | Cards, modals, task items |
-| Text Primary | #111827 | #F9FAFB | Headings, body text |
-| Text Secondary | #6B7280 | #9CA3AF | Metadata, subtitles |
-| Accent Primary | #3B82F6 | #60A5FA | Buttons, focus highlights |
-| Success | #22C55E | #4ADE80 | Completions, checkmarks |
-| Warning | #EAB308 | #FBBF24 | Due dates, priorities |
-| Error | #EF4444 | #F87171 | Alerts, validation |
-| Neutral | #E5E7EB | #4B5563 | Borders, dividers |
+| Background Primary | #f4f0e6 | #1a1917 | Main app background, subtle gradients |
+| Surface | #fef9ef | #2c2b29 | Cards, modals, elevated elements |
+| Text Primary | #2C2C2C | #e5e5e5 | Headings, body text |
+| Text Secondary | #6B6B6B | #a3a3a3 | Subtitles, metadata, disabled states |
+| Accent Primary | #C17A56 | #d99b7a | Buttons, icons, highlights (e.g., priorities) |
+| Success | #7BB27A | #9fd99e | Positive feedback, completions |
+| Warning | #FF6B35 | #ff8c5e | Alerts, due dates |
+| Info | #4F46E5 | #7f75ff | Insights, secondary actions |
+| Neutral | #e5e7eb | #4b4b4b | Borders, dividers |
+| Error | #DC3545 | #ff6666 | Errors, critical alerts |
 
-Tailwind Config Example:
+Code Example (Tailwind config.js):
 ```javascript
 module.exports = {
   theme: {
     extend: {
       colors: {
-        'bg-primary': { light: '#F9FAFB', dark: '#1F2937' },
-        surface: { light: '#FFFFFF', dark: '#374151' },
-        // ... add others
+        'bg-primary': '#f4f0e6',
+        surface: '#fef9ef',
+        // ... other colors
       },
     },
   },
 };
 ```
 
-CSS Vars Example:
+Code Example (CSS Variables):
 ```css
 :root {
-  --bg-primary: #F9FAFB;
-  --surface: #FFFFFF;
+  --bg-primary: #f4f0e6;
+  --surface: #fef9ef;
   // ...
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #1F2937;
-    --surface: #374151;
-    // ...
-  }
 }
 ```
 
 ## Typography
-Clean sans-serif for readability. Modular scale with fluid sizing (clamp) for responsiveness.
+Use a clean, sans-serif font stack for readability. Sizes follow a modular scale (base 16px) with responsive adjustments (e.g., clamp for fluid typography). Weights: 400 (regular), 500 (medium), 700 (bold). Line height: 1.6 for body text.
 
-- Font Family: 'Inter', system-ui, sans-serif (web-safe, lightweight).
-- Sizes: Base 16px; H1: clamp(1.5rem, 5vw, 2rem); Body: 1rem; Small: 0.875rem.
-- Weights: 400 (regular), 600 (bold).
-- Line Height: 1.5 for body; 1.2 for headings.
+- Font Family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; Fallback: sans-serif.
+- Sizes:
+  - Base: 16px (1rem)
+  - H1: 2.25rem (36px)
+  - H2: 1.5rem (24px)
+  - Body: 1rem (16px)
+- Effects: Subtle text shadows for depth on headings (e.g., 0 2px 4px rgba(0,0,0,0.1)).
 
-CSS Example:
+Code Example (CSS):
 ```css
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 1rem;
-  line-height: 1.5;
-}
-h1 {
-  font-size: clamp(1.5rem, 5vw, 2rem);
-  font-weight: 600;
+  line-height: 1.6;
+  color: var(--text-primary);
 }
 ```
 
 ## Spacing and Layout
-4px base unit for consistency; Responsive grids/flex for mobile-first.
+Use a 4px base unit for consistency (rem-based for accessibility). Grid and flex for layouts. Breakpoints: Mobile (0-639px), Tablet (640-1023px), Desktop (1024px+).
 
-- Scale: xs: 0.25rem, sm: 0.5rem, md: 1rem, lg: 1.5rem, xl: 2rem.
-- Layout: Flex-col on mobile, grid on desktop (e.g., grid-cols-1 md:grid-cols-2 for tasks).
-- Breakpoints: sm (640px), md (768px), lg (1024px).
+- Spacing Scale: xs: 0.25rem (4px), sm: 0.5rem (8px), md: 1rem (16px), lg: 1.5rem (24px), xl: 2rem (32px), 2xl: 3rem (48px).
+- Padding/Margins: Consistent p-4 for cards, space-y-4 for vertical stacks.
+- Layout: Flex-col for vertical mobile flows; grid for stats (e.g., grid-cols-2).
 
-Tailwind Example: space-y-4 for stacks; gap-4 for grids.
+Code Example (Tailwind Classes):
+- Padding: p-4, px-4 py-2
+- Spacing: space-y-6, gap-3
+
+## Icons and Imagery
+- Icon Set: Lucide-react (or similar line icons) for consistency.
+- Sizes: Small: 20x20px (w-5 h-5), Medium: 24x24px (w-6 h-6), Large: 32x32px (w-8 h-8).
+- Styles: Stroke width 1.5-2, colored via accents (e.g., success for checkmarks).
+- Imagery: SVGs preferred; lazy-load images with alt text. Aspect ratios: Square for icons, 16:9 for banners.
+
+Code Example:
+```jsx
+<Icon className="w-6 h-6" style={{ color: 'var(--accent-primary)' }} />
+```
 
 ## Shadows, Borders, and Effects
-Subtle for depth without clutter.
+- Shadows: Soft elevations for depth—sm: 0px 2px 8px rgba(0,0,0,0.06); md: 0px 4px 15px rgba(0,0,0,0.08).
+- Borders: Radius: xl (rounded-xl: 0.75rem/12px), 2xl (rounded-2xl: 1rem/16px); Width: 1-2px; Styles: solid/dashed for priorities.
+- Effects: Transitions: all 300ms ease; Hovers: -translate-y-1, shadow-lg; Animations: pulse (scale/opacity).
 
-- Shadows: sm: 0 1px 2px rgba(0,0,0,0.05); md: 0 4px 6px rgba(0,0,0,0.1).
-- Borders: Radius: md (0.375rem); Width: 1px solid var(--neutral).
-- Effects: Transitions: 200ms ease; Animations: subtle fade (opacity 0 to 1).
-
-CSS Animation Example:
+Code Example (CSS Animations):
 ```css
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
 }
-.animated { animation: fadeIn 300ms ease-in; }
-@media (prefers-reduced-motion) { .animated { animation: none; } }
 ```
 
 ## Accessibility and Variations

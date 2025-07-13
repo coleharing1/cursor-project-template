@@ -33,3 +33,4 @@ yarn-error.log*
 .vscode/*.code-workspace
 *.sublime-project
 *.sublime-workspace 
+.vercel
