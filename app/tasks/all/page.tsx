@@ -27,13 +27,15 @@ interface Task {
   description?: string
   completed: boolean
   completed_at?: string
-  priority?: "low" | "medium" | "high"
   duration?: number
   is_focused?: boolean
   category_id?: string
   category?: Category
   created_at: string
   updated_at: string
+  position?: number
+  due_date?: string
+  tags?: string[]
 }
 
 interface Category {
@@ -56,7 +58,7 @@ export default function AllTasks() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterPriority, setFilterPriority] = useState<string>("all")
+  // Priority filtering removed as we're using position-based ordering
   const [filterCategory, setFilterCategory] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("created_at")
@@ -85,8 +87,17 @@ export default function AllTasks() {
         throw new Error('Failed to fetch data')
       }
 
-      const tasksData = await tasksResponse.json()
+      let tasksData = await tasksResponse.json()
       const categoriesData = await categoriesResponse.json()
+
+      // Parse interval strings into minutes
+      tasksData = tasksData.map((task: any) => {
+        if (task.duration && typeof task.duration === 'string') {
+          const parts = task.duration.split(':').map(Number)
+          task.duration = parts[0] * 60 + parts[1]
+        }
+        return task
+      })
 
       setTasks(tasksData)
       setCategories(categoriesData)
@@ -132,6 +143,28 @@ export default function AllTasks() {
     }
   }
 
+  const toggleFocus = async (taskId: string, currentlyFocused: boolean) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_focused: !currentlyFocused,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update task focus')
+      }
+
+      await fetchData()
+    } catch (error) {
+      console.error('Error updating task focus:', error)
+    }
+  }
+
   // Filter and sort tasks
   const filteredAndSortedTasks = tasks
     .filter(task => {
@@ -141,10 +174,7 @@ export default function AllTasks() {
         return false
       }
       
-      // Priority filter
-      if (filterPriority !== "all" && task.priority !== filterPriority) {
-        return false
-      }
+      // Priority filter removed - using position-based ordering
       
       // Category filter
       if (filterCategory !== "all" && task.category_id !== filterCategory) {
@@ -159,9 +189,8 @@ export default function AllTasks() {
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case "priority":
-          const priorityOrder = { high: 0, medium: 1, low: 2 }
-          return (priorityOrder[a.priority || "low"] || 2) - (priorityOrder[b.priority || "low"] || 2)
+        case "position":
+          return (a.position || 0) - (b.position || 0)
         case "title":
           return a.title.localeCompare(b.title)
         case "created_at":
@@ -216,8 +245,12 @@ export default function AllTasks() {
       title: task.title,
       description: task.description,
       completed: task.completed || !!task.completed_at,
-      priority: task.priority,
       duration: task.duration,
+      is_focused: task.is_focused,
+      category_id: task.category_id,
+      dueDate: task.due_date ? new Date(task.due_date) : undefined,
+      tags: task.tags,
+      position: task.position,
     }))
   }
 
@@ -237,22 +270,23 @@ export default function AllTasks() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">All Tasks</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-3xl font-bold">All Tasks</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
               Manage and organize all your tasks in one place
             </p>
           </div>
-          <Button onClick={() => setShowAddTaskModal(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Task
+          <Button onClick={() => setShowAddTaskModal(true)} className="gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
+            <span className="hidden sm:inline">New Task</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
 
         {/* Filters and Search */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+            <CardTitle className="text-base sm:text-lg flex items-center gap-1.5 sm:gap-2">
+              <Filter className="h-4 sm:h-5 w-4 sm:w-5" />
               Filters & Search
             </CardTitle>
           </CardHeader>
@@ -269,11 +303,11 @@ export default function AllTasks() {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="filter-status">Status</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="filter-status" className="text-xs sm:text-sm">Status</Label>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger id="filter-status">
+                  <SelectTrigger id="filter-status" className="h-8 sm:h-10 text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -284,25 +318,10 @@ export default function AllTasks() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="filter-priority">Priority</Label>
-                <Select value={filterPriority} onValueChange={setFilterPriority}>
-                  <SelectTrigger id="filter-priority">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priorities</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="filter-category">Category</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="filter-category" className="text-xs sm:text-sm">Category</Label>
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger id="filter-category">
+                  <SelectTrigger id="filter-category" className="h-8 sm:h-10 text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -311,10 +330,10 @@ export default function AllTasks() {
                       <SelectItem key={category.id} value={category.id}>
                         <div className="flex items-center gap-2">
                           <div
-                            className="w-3 h-3 rounded-full"
+                            className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full"
                             style={{ backgroundColor: category.color }}
                           />
-                          {category.name}
+                          <span className="text-xs sm:text-sm">{category.name}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -322,16 +341,16 @@ export default function AllTasks() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="sort-by">Sort By</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="sort-by" className="text-xs sm:text-sm">Sort By</Label>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger id="sort-by">
+                  <SelectTrigger id="sort-by" className="h-8 sm:h-10 text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="created_at">Date Created</SelectItem>
                     <SelectItem value="updated_at">Last Updated</SelectItem>
-                    <SelectItem value="priority">Priority</SelectItem>
+                    <SelectItem value="position">Position</SelectItem>
                     <SelectItem value="title">Title</SelectItem>
                   </SelectContent>
                 </Select>
@@ -359,8 +378,9 @@ export default function AllTasks() {
                 <TaskList
                   tasks={transformTasksForList(filteredAndSortedTasks)}
                   onToggleTask={toggleTask}
-                  onEditTask={fetchData}
-                  onDeleteTask={fetchData}
+                  onToggleFocus={toggleFocus}
+                  onEditTask={async () => await fetchData()}
+                  onDeleteTask={async () => await fetchData()}
                   showQuickAdd={false}
                   title=""
                 />
@@ -372,16 +392,16 @@ export default function AllTasks() {
             <Accordion type="single" collapsible className="space-y-4">
               {Object.entries(groupedTasks).map(([categoryId, group]) => (
                 <AccordionItem key={categoryId} value={categoryId} className="border rounded-lg">
-                  <AccordionTrigger className="px-4 hover:no-underline">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <div className="flex items-center gap-3">
+                  <AccordionTrigger className="px-3 sm:px-4 hover:no-underline">
+                    <div className="flex items-center justify-between w-full pr-2 sm:pr-4">
+                      <div className="flex items-center gap-2 sm:gap-3">
                         <div
-                          className="w-4 h-4 rounded-full"
+                          className="w-3 sm:w-4 h-3 sm:h-4 rounded-full"
                           style={{ backgroundColor: group.category.color }}
                         />
-                        <span className="font-semibold">{group.category.name}</span>
+                        <span className="text-sm sm:text-base font-semibold">{group.category.name}</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground">
                         {group.tasks.length} task{group.tasks.length !== 1 ? 's' : ''}
                       </span>
                     </div>
@@ -390,8 +410,9 @@ export default function AllTasks() {
                     <TaskList
                       tasks={transformTasksForList(group.tasks)}
                       onToggleTask={toggleTask}
-                      onEditTask={fetchData}
-                      onDeleteTask={fetchData}
+                      onToggleFocus={toggleFocus}
+                      onEditTask={async () => await fetchData()}
+                      onDeleteTask={async () => await fetchData()}
                       showQuickAdd={false}
                       title=""
                     />

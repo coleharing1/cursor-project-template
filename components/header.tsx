@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, ListTodo, Target, Clock, Settings, LogOut } from "lucide-react"
+import { Home, ListTodo, Target, Clock, Settings, LogOut, Layers } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/components/providers/auth-provider"
@@ -13,6 +13,7 @@ export function Header() {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Categories", href: "/categories", icon: Layers },
     { name: "All Tasks", href: "/tasks/all", icon: ListTodo },
     { name: "Today's Focus", href: "/focus/today", icon: Target },
     { name: "History", href: "/log", icon: Clock },
@@ -25,7 +26,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center">
         <div className="mr-4 flex">
           <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
             <Target className="h-6 w-6 text-primary" />

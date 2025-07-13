@@ -36,24 +36,20 @@ export async function GET(request: Request) {
       query = query.is('completed_at', null)
     }
     
-    if (categoryId) {
-      if (categoryId === 'null') {
-        query = query.is('category_id', null)
-      } else {
-        query = query.eq('category_id', categoryId)
-      }
+    if (categoryId && categoryId !== 'null') {
+      query = query.eq('category_id', categoryId)
+    } else if (categoryId === 'null') {
+      query = query.is('category_id', null)
     }
     
-    if (isFocused !== null) {
+    if (isFocused && isFocused !== 'null') {
       query = query.eq('is_focused', isFocused === 'true')
     }
     
-    if (parentId !== undefined) {
-      if (parentId === 'null') {
-        query = query.is('parent_id', null)
-      } else {
-        query = query.eq('parent_id', parentId)
-      }
+    if (parentId && parentId !== 'null') {
+      query = query.eq('parent_id', parentId)
+    } else if (parentId === 'null') {
+      query = query.is('parent_id', null)
     }
 
     const { data: tasks, error } = await query

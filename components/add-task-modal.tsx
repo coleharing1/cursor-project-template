@@ -24,12 +24,15 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { formatDuration } from "@/lib/utils"
 
 interface Category {
   id: string
   name: string
   color: string
   icon: string
+  parent_id?: string | null
+  subcategories?: Category[]
 }
 
 interface AddTaskModalProps {
@@ -48,7 +51,6 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
   // Form state
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium")
   const [duration, setDuration] = useState("")
   const [categoryId, setCategoryId] = useState("")
   const [isFocused, setIsFocused] = useState(false)
@@ -69,10 +71,18 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
         throw new Error("Failed to fetch categories")
       }
       const data = await response.json()
-      setCategories(data)
+      
+      // Organize categories into hierarchy
+      const parentCategories = data.filter((cat: Category) => !cat.parent_id)
+      const categoriesWithSubcategories = parentCategories.map((parent: Category) => {
+        const subcategories = data.filter((cat: Category) => cat.parent_id === parent.id)
+        return { ...parent, subcategories }
+      })
+      
+      setCategories(categoriesWithSubcategories)
       // Select first category by default if available
-      if (data.length > 0 && !categoryId) {
-        setCategoryId(data[0].id)
+      if (categoriesWithSubcategories.length > 0 && !categoryId) {
+        setCategoryId(categoriesWithSubcategories[0].id)
       }
     } catch (error) {
       console.error("Error fetching categories:", error)
@@ -91,7 +101,6 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
       const taskData = {
         title: title.trim(),
         description: description.trim() || undefined,
-        priority,
         duration: duration ? parseInt(duration, 10) : undefined,
         category_id: categoryId || undefined,
         is_focused: isFocused,
@@ -113,7 +122,6 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
       // Reset form
       setTitle("")
       setDescription("")
-      setPriority("medium")
       setDuration("")
       setIsFocused(false)
       
@@ -164,52 +172,6 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more details about this task"
-              rows={3}
-              disabled={loading}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={priority}
-                onValueChange={(value) => setPriority(value as "low" | "medium" | "high")}
-                disabled={loading}
-              >
-                <SelectTrigger id="priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                placeholder="30"
-                min="1"
-                max="480"
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
             <Select
               value={categoryId}
@@ -220,17 +182,28 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
                 <SelectValue placeholder={loadingCategories ? "Loading..." : "Select a category"} />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
+                {categories.map((category) => [
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
-                      {category.name}
+                      <span className="font-medium">{category.name}</span>
                     </div>
-                  </SelectItem>
-                ))}
+                  </SelectItem>,
+                  ...(category.subcategories || []).map((sub) => (
+                    <SelectItem key={sub.id} value={sub.id}>
+                      <div className="flex items-center gap-2 ml-4">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: sub.color }}
+                        />
+                        <span className="text-sm">{sub.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))
+                ]).flat()}
               </SelectContent>
             </Select>
           </div>
@@ -248,6 +221,42 @@ export function AddTaskModal({ open, onOpenChange, onTaskCreated }: AddTaskModal
             >
               Add to Today's Focus
             </Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add more details about this task"
+              rows={3}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="duration">Duration (minutes)</Label>
+            <Input
+              id="duration"
+              type="number"
+              value={duration}
+              onChange={(e) => {
+                const value = e.target.value
+                // Only allow positive integers
+                if (value === '' || /^\d+$/.test(value)) {
+                  setDuration(value)
+                }
+              }}
+              placeholder="30"
+              min="1"
+              max="480"
+              step="5"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              {duration && formatDuration(parseInt(duration))}
+            </p>
           </div>
 
           <DialogFooter>

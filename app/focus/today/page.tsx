@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/providers/auth-provider"
 import { AddTaskModal } from "@/components/add-task-modal"
 import {
@@ -39,9 +38,10 @@ import {
   CheckCircle2,
   Timer,
   GripVertical,
-  Calendar,
+  Circle,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatDuration } from "@/lib/utils"
+import { DailyResetService } from "@/lib/reset-service"
 
 interface Task {
   id: string
@@ -49,7 +49,6 @@ interface Task {
   description?: string
   completed: boolean
   completed_at?: string
-  priority?: "low" | "medium" | "high"
   duration?: number
   is_focused?: boolean
   category_id?: string
@@ -61,17 +60,23 @@ interface Task {
   }
   created_at: string
   updated_at: string
-  order?: number
+  position?: number
 }
 
-interface SortableTaskItemProps {
+// Sortable Task Component
+function SortableTask({ 
+  task, 
+  onToggleTask, 
+  completingTasks,
+  onStartTimer,
+  isTimerActive
+}: { 
   task: Task
-  onToggle: (taskId: string) => void
+  onToggleTask: (id: string) => void
+  completingTasks: Set<string>
   onStartTimer: (task: Task) => void
   isTimerActive: boolean
-}
-
-function SortableTaskItem({ task, onToggle, onStartTimer, isTimerActive }: SortableTaskItemProps) {
+}) {
   const {
     attributes,
     listeners,
@@ -84,19 +89,7 @@ function SortableTaskItem({ task, onToggle, onStartTimer, isTimerActive }: Sorta
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  }
-
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case "high":
-        return "text-red-500 bg-red-50 border-red-200"
-      case "medium":
-        return "text-yellow-600 bg-yellow-50 border-yellow-200"
-      case "low":
-        return "text-green-600 bg-green-50 border-green-200"
-      default:
-        return "text-gray-500 bg-gray-50 border-gray-200"
-    }
+    opacity: isDragging ? 0.5 : 1,
   }
 
   return (
@@ -104,90 +97,68 @@ function SortableTaskItem({ task, onToggle, onStartTimer, isTimerActive }: Sorta
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative rounded-lg border bg-background p-4 transition-all",
-        isDragging && "shadow-lg opacity-80",
-        task.completed && "opacity-60"
+        "flex items-center gap-2 p-2 rounded-md hover:bg-accent/50 transition-colors",
+        isDragging && "cursor-grabbing"
       )}
     >
-      <div className="flex items-start gap-3">
-        <div
-          {...attributes}
-          {...listeners}
-          className="mt-1 cursor-grab touch-none"
-        >
-          <GripVertical className="h-5 w-5 text-muted-foreground" />
-        </div>
-
-        <Checkbox
-          checked={task.completed || !!task.completed_at}
-          onCheckedChange={() => onToggle(task.id)}
-          className="mt-1"
-        />
-
-        <div className="flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="space-y-1">
-              <h3 className={cn(
-                "font-medium",
-                task.completed && "line-through text-muted-foreground"
-              )}>
-                {task.title}
-              </h3>
-              {task.description && (
-                <p className="text-sm text-muted-foreground">{task.description}</p>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {task.priority && (
-                <Badge 
-                  variant="outline" 
-                  className={cn("text-xs", getPriorityColor(task.priority))}
-                >
-                  {task.priority}
-                </Badge>
-              )}
-              {task.category && (
-                <Badge 
-                  variant="outline" 
-                  className="text-xs"
-                  style={{ 
-                    borderColor: task.category.color,
-                    backgroundColor: `${task.category.color}20`,
-                    color: task.category.color 
-                  }}
-                >
-                  {task.category.name}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              {task.duration && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{task.duration}min</span>
-                </div>
-              )}
-            </div>
-
-            {!task.completed && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onStartTimer(task)}
-                className="gap-2"
-                disabled={isTimerActive}
-              >
-                <Play className="h-3 w-3" />
-                Start Timer
-              </Button>
-            )}
-          </div>
-        </div>
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab p-0.5 sm:p-1 hover:bg-accent rounded touch-none"
+      >
+        <GripVertical className="h-3 sm:h-4 w-3 sm:w-4 text-muted-foreground" />
       </div>
+      <div className="relative p-2">
+        <div className="absolute inset-2 bg-green-500 rounded-full blur-md opacity-60 animate-pulse" />
+        <div className="relative w-2 h-2 sm:w-2.5 sm:h-2.5 bg-green-500 rounded-full shadow-lg shadow-green-500/50" />
+      </div>
+      <span className="flex-1 text-xs sm:text-sm font-medium truncate">{task.title}</span>
+      {task.duration && (
+        <span className="text-[10px] sm:text-xs text-muted-foreground">
+          {formatDuration(task.duration)}
+        </span>
+      )}
+      {task.category && (
+        <Badge 
+          variant="outline" 
+          className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5"
+          style={{ 
+            borderColor: task.category.color,
+            backgroundColor: `${task.category.color}20`,
+            color: task.category.color 
+          }}
+        >
+          <span className="truncate max-w-[60px] sm:max-w-none">
+            {task.category.name}
+          </span>
+        </Badge>
+      )}
+      {!task.completed && !completingTasks.has(task.id) && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 sm:h-8 sm:w-8"
+          onClick={() => onStartTimer(task)}
+          disabled={isTimerActive}
+          title={isTimerActive ? "Timer already running" : "Start timer"}
+        >
+          <Play className="h-3 sm:h-4 w-3 sm:w-4" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
+        onClick={() => onToggleTask(task.id)}
+        title="Mark as complete"
+        disabled={completingTasks.has(task.id)}
+      >
+        {completingTasks.has(task.id) ? (
+          <CheckCircle2 className="h-4 sm:h-5 w-4 sm:w-5 text-green-600 animate-pulse" />
+        ) : (
+          <Circle className="h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground hover:text-green-600 transition-colors" />
+        )}
+      </Button>
     </div>
   )
 }
@@ -198,12 +169,17 @@ export default function TodaysFocus() {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [activeTimer, setActiveTimer] = useState<string | null>(null)
   const [timerSeconds, setTimerSeconds] = useState(0)
+  const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set())
   
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -213,6 +189,8 @@ export default function TodaysFocus() {
     if (!authLoading && !user) {
       router.push("/login")
     } else if (user) {
+      // Check if daily reset is needed
+      DailyResetService.runResetIfNeeded()
       fetchFocusedTasks()
     }
   }, [user, authLoading, router])
@@ -238,12 +216,21 @@ export default function TodaysFocus() {
       if (!response.ok) {
         throw new Error('Failed to fetch tasks')
       }
-      const data = await response.json()
+      let data = await response.json()
+
+      // Parse interval strings into minutes
+      data = data.map((task: any) => {
+        if (task.duration && typeof task.duration === 'string') {
+          const parts = task.duration.split(':').map(Number)
+          task.duration = parts[0] * 60 + parts[1]
+        }
+        return task
+      })
       
-      // Sort by order if available, otherwise by created_at
+      // Sort by position if available, otherwise by created_at
       const sortedData = data.sort((a: Task, b: Task) => {
-        if (a.order !== undefined && b.order !== undefined) {
-          return a.order - b.order
+        if (a.position !== undefined && b.position !== undefined) {
+          return a.position - b.position
         }
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       })
@@ -257,28 +244,22 @@ export default function TodaysFocus() {
   }
 
   const toggleTask = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId)
-    if (!task) return
-
-    // Stop timer if this task is being timed
-    if (activeTimer === taskId) {
-      setActiveTimer(null)
-      setTimerSeconds(0)
-    }
-
-    // Optimistic update
-    setTasks(tasks.map(t => 
-      t.id === taskId ? { ...t, completed: !t.completed } : t
-    ))
-
+    setCompletingTasks(prev => new Set(prev).add(taskId))
+    
     try {
+      // Stop timer if this task is being timed
+      if (activeTimer === taskId) {
+        setActiveTimer(null)
+        setTimerSeconds(0)
+      }
+
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          completed_at: task.completed ? null : new Date().toISOString(),
+          completed_at: new Date().toISOString(),
         }),
       })
 
@@ -286,14 +267,17 @@ export default function TodaysFocus() {
         throw new Error('Failed to update task')
       }
 
-      // Refetch tasks to ensure consistency
+      // Small delay to show animation
+      await new Promise(resolve => setTimeout(resolve, 300))
       await fetchFocusedTasks()
     } catch (error) {
       console.error('Error updating task:', error)
-      // Revert optimistic update
-      setTasks(tasks.map(t => 
-        t.id === taskId ? { ...t, completed: task.completed } : t
-      ))
+    } finally {
+      setCompletingTasks(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(taskId)
+        return newSet
+      })
     }
   }
 
@@ -316,7 +300,7 @@ export default function TodaysFocus() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ order: index }),
+            body: JSON.stringify({ position: index * 100 }), // Use spacing of 100 for flexibility
           })
         )
 
@@ -347,7 +331,9 @@ export default function TodaysFocus() {
 
   // Calculate stats
   const completedTasks = tasks.filter(t => t.completed || !!t.completed_at)
+  const remainingTasks = tasks.filter(t => !t.completed && !t.completed_at)
   const totalDuration = tasks.reduce((acc, task) => acc + (task.duration || 0), 0)
+  const remainingDuration = remainingTasks.reduce((acc, task) => acc + (task.duration || 0), 0)
   const completedDuration = completedTasks.reduce((acc, task) => acc + (task.duration || 0), 0)
   const progress = totalDuration > 0 ? (completedDuration / totalDuration) * 100 : 0
 
@@ -367,22 +353,23 @@ export default function TodaysFocus() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Target className="h-8 w-8 text-primary" />
+            <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-1.5 sm:gap-2">
+              <Target className="h-6 sm:h-8 w-6 sm:w-8 text-primary" />
               Today&apos;s Focus
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          <Button onClick={() => setShowAddTaskModal(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Focus Task
+          <Button onClick={() => setShowAddTaskModal(true)} className="gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
+            <span className="hidden sm:inline">Add Focus Task</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Progress</CardTitle>
@@ -390,11 +377,11 @@ export default function TodaysFocus() {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">{completedTasks.length}/{tasks.length}</span>
-                  <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-xl sm:text-2xl font-bold">{completedTasks.length}/{tasks.length}</span>
+                  <CheckCircle2 className="h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground" />
                 </div>
                 <Progress value={progress} className="h-2" />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   {Math.round(progress)}% complete
                 </p>
               </div>
@@ -408,11 +395,14 @@ export default function TodaysFocus() {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">{totalDuration}min</span>
-                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-xl sm:text-2xl font-bold">{formatDuration(totalDuration)}</span>
+                  <Clock className="h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {completedDuration}min completed
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  {formatDuration(remainingDuration)} remaining
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  {formatDuration(completedDuration)} completed
                 </p>
               </div>
             </CardContent>
@@ -425,23 +415,28 @@ export default function TodaysFocus() {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold font-mono">
+                  <span className="text-xl sm:text-2xl font-bold font-mono">
                     {formatTime(timerSeconds)}
                   </span>
-                  <Timer className="h-5 w-5 text-muted-foreground" />
+                  <Timer className="h-4 sm:h-5 w-4 sm:w-5 text-muted-foreground" />
                 </div>
                 {activeTimer ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={stopTimer}
-                    className="w-full gap-2"
-                  >
-                    <Pause className="h-3 w-3" />
-                    Stop Timer
-                  </Button>
+                  <>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      {tasks.find(t => t.id === activeTimer)?.title || "Unknown task"}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={stopTimer}
+                      className="w-full gap-1 sm:gap-2 text-xs sm:text-sm"
+                    >
+                      <Pause className="h-3 w-3" />
+                      Stop Timer
+                    </Button>
+                  </>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     No active timer
                   </p>
                 )}
@@ -452,22 +447,16 @@ export default function TodaysFocus() {
 
         {/* Tasks List */}
         <Card>
-          <CardHeader>
-            <CardTitle>Focus Tasks</CardTitle>
-            <CardDescription>
-              Drag to reorder tasks based on your priorities
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {tasks.length === 0 ? (
               <div className="text-center py-12">
                 <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">
                   No focus tasks for today yet
                 </p>
-                <Button onClick={() => setShowAddTaskModal(true)} variant="outline">
-                  Add Your First Focus Task
-                </Button>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add tasks from the categories below or create a new one
+                </p>
               </div>
             ) : (
               <DndContext
@@ -479,12 +468,13 @@ export default function TodaysFocus() {
                   items={tasks.map(t => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-3">
-                    {tasks.map(task => (
-                      <SortableTaskItem
+                  <div className="space-y-1">
+                    {tasks.map((task) => (
+                      <SortableTask
                         key={task.id}
                         task={task}
-                        onToggle={toggleTask}
+                        onToggleTask={toggleTask}
+                        completingTasks={completingTasks}
                         onStartTimer={startTimer}
                         isTimerActive={activeTimer === task.id}
                       />

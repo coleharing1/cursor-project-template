@@ -20,7 +20,7 @@ export function DashboardLayout({ children, showSidebar = false }: DashboardLayo
           </aside>
         )}
         <main className="flex-1">
-          <div className="container py-6">{children}</div>
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</div>
         </main>
       </div>
     </div>

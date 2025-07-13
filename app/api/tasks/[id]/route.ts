@@ -68,11 +68,24 @@ export async function PUT(
       )
     }
 
+    const { data: validatedData } = validationResult
+
+    // Create a mutable object for the update payload
+    const updatePayload: { [key: string]: any } = { ...validatedData }
+
+    // Convert duration from minutes to an interval string for Supabase
+    if (updatePayload.duration !== undefined && updatePayload.duration !== null) {
+      updatePayload.duration = `${updatePayload.duration} minutes`
+    } else if (updatePayload.duration === null) {
+      // Ensure null is passed correctly if duration is cleared
+      updatePayload.duration = null
+    }
+
     // Update task
     const { data: task, error } = await supabase
       .from('tasks')
       .update({
-        ...validationResult.data,
+        ...updatePayload,
         updated_at: new Date().toISOString(),
       })
       .eq('id', params.id)
